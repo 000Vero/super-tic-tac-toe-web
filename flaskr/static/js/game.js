@@ -6,6 +6,22 @@ var height = 1080;
 width = (screenWidth * 0.8);
 height = width / 16 * 9;
 
+var mainGrid = new Array(9);
+for (let i = 0; i < mainGrid.length; i++) {
+    mainGrid[i] = new Array(3);
+}
+
+for (let i = 0; i < mainGrid.length; i++) {
+    mainGrid[i][0] = new Array(3);
+    mainGrid[i][1] = new Array(3);
+    mainGrid[i][2] = new Array(3);
+}
+
+var turn = -1;
+
+var currentBox = -1;
+
+var boxBigChunkConstant = 0.37674418604;
 
 (async () =>
 {
@@ -285,10 +301,10 @@ height = width / 16 * 9;
 
     let refMatrix = [[0, 3, 6], [1, 4, 7], [2, 5, 8]];
 
-    function gridClick(event) {
+    function getBoxFromPosition(x, y) {
         let gridSize = grid.getSize();
-        let relX = event.x - (grid.position.x - gridSize.width / 2);
-        let relY = event.y - (grid.position.y - gridSize.height/2);
+        let relX = x - (grid.position.x - gridSize.width / 2);
+        let relY = y - (grid.position.y - gridSize.height / 2);
         let boxX;
         let boxY;
         if (relX < gridSize.width / 3) boxX = 0;
@@ -299,7 +315,81 @@ height = width / 16 * 9;
         else if (relY >= gridSize.height / 3 && relY < gridSize.height / 3 * 2) boxY = 1;
         else boxY = 2;
 
-        moveSmallGridBox(refMatrix[boxX][boxY]);
+        return {box: refMatrix[boxX][boxY], boxX: boxX, boxY: boxY};
+    }
+
+    function mapSmallBoxPosition(x, y, boxX, boxY) {
+        let gridSize = grid.getSize();
+        let relX = grid.position.x - gridSize.width / 2;
+        let relY = grid.position.y - gridSize.height / 2;
+        let boxBeginX;
+        let boxEndX;
+        let boxBeginY;
+        let boxEndY;
+
+        switch (boxX) {
+            case 0:
+                boxBeginX = relX;
+                boxEndX = relX + gridSize.width / 3;
+                break;
+            case 1:
+                boxBeginX = relX + gridSize.width / 3;
+                boxEndX = relX + gridSize.width / 3 * 2;
+                break;
+            case 2:
+                boxBeginX = relX + gridSize.width / 3 * 2;
+                boxEndX = relX + gridSize.width;
+        }
+
+        switch (boxY) {
+            case 0:
+                boxBeginY = relY;
+                boxEndY = relY + gridSize.height / 3;
+                break;
+            case 1:
+                boxBeginY = relY + gridSize.height / 3;
+                boxEndY = relY + gridSize.height / 3 * 2;
+                break;
+            case 2:
+                boxBeginY = relY + gridSize.height / 3 * 2;
+                boxEndY = relY + gridSize.height;
+        }
+
+        let boxSizeX = boxEndX - boxBeginX;
+        let boxSizeY = boxEndY - boxBeginY;
+        let relPosX = x - boxBeginX;
+        let relPosY = y - boxBeginY;
+
+        let accessX;
+        let accessY;
+
+        if (relPosX < boxBigChunkConstant * boxSizeX) accessX = 0;
+        else if (relPosX > boxBigChunkConstant * boxSizeX && relPosX < boxSizeX - (boxBigChunkConstant * boxSizeX)) accessX = 1;
+        else accessX = 2;
+
+        if (relPosY < boxBigChunkConstant * boxSizeY) accessY = 0;
+        else if (relPosY > boxBigChunkConstant * boxSizeY && relPosY < boxSizeY - (boxBigChunkConstant * boxSizeY)) accessY = 1;
+        else accessY = 2;
+
+        return {accessX: accessX, accessY: accessY, generalBox: refMatrix[accessX][accessY]};
+
+    }
+
+    function gridClick(event) {
+        let box = getBoxFromPosition(event.x, event.y);
+
+        if (currentBox < 0) {
+            moveSmallGridBox(box.box);
+            currentBox = box.box;
+        }
+
+        if (box.box != currentBox) return;
+        
+        let accesses = mapSmallBoxPosition(event.x, event.y, box.boxX, box.boxY);
+        //mainGrid[box.box][accesses.accessY][accesses.accessX] = 1;
+        moveSmallGridBox(accesses.generalBox);
+        currentBox = accesses.generalBox;
+
     }
     
     function type(string, x, y, fontScale) {
