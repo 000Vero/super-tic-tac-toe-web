@@ -39,6 +39,15 @@ height = width / 16 * 9;
     const fontSheet = await PIXI.Assets.load("../static/assets/font.png");
     fontSheet.source.scaleMode = PIXI.SCALE_MODES.NEAREST;
 
+    const gridTexture = await PIXI.Assets.load("../static/assets/grid.png");
+    gridTexture.source.scaleMode = PIXI.SCALE_MODES.NEAREST;
+
+    const crossTexture = await PIXI.Assets.load("../static/assets/cross.png");
+    crossTexture.source.scaleMode = PIXI.SCALE_MODES.NEAREST;
+
+    const circleTexture = await PIXI.Assets.load("../static/assets/circle.png");
+    circleTexture.source.scaleMode = PIXI.SCALE_MODES.NEAREST;
+
     PIXI.Assets.add({
         alias: "fontTable",
         src: "../static/assets/font.json",
@@ -119,13 +128,128 @@ height = width / 16 * 9;
         playOnlineButton.position.x - playOnlineButton.getSize().width,
         playOnlineButton.position.y,
         true
-    )
+    );
+
+    var uiElements = [background, title, subtitle, playOfflineButton, playOnlineButton];
+    var uiText = [offlineText, onlineText, subtitleText];
+
+    var grid = new PIXI.Sprite(gridTexture);
+    grid.visible = false;
+    grid.setSize(width / 2, width / 2);
+    grid.anchor.set(0.5, 0.5);
+    grid.position.set(gameX + width / 2, gameY + height / 2);
+    app.stage.addChild(grid);
+
+    grid.eventMode = "static";
+    grid.on("pointerdown", gridClick);
+
+    var bigGridBox = [];
+    for (let i = 0; i < 4; i++) {
+        if (i < 2) {
+            let sprite = new PIXI.Sprite(PIXI.Texture.WHITE);
+            sprite.tint = "green";
+            sprite.visible = false;
+            sprite.setSize(width / 2, height / 64);
+            sprite.anchor.set(0.5, 0.5);
+            if (!i) sprite.position.set(gameX + width / 2, grid.position.y - grid.getSize().height / 2);
+            else sprite.position.set(gameX + width / 2, grid.position.y + grid.getSize().height / 2);
+            bigGridBox = bigGridBox.concat(sprite);
+            app.stage.addChild(sprite);
+        } else {
+            let sprite = new PIXI.Sprite(PIXI.Texture.WHITE);
+            sprite.tint = "green";
+            sprite.visible = false;
+            sprite.setSize(height / 64, width / 2);
+            sprite.anchor.set(0.5, 0.5);
+            if (!(i - 2)) sprite.position.set(grid.position.x - grid.getSize().width / 2, gameY + height / 2);
+            else sprite.position.set(grid.position.x + grid.getSize().width / 2, gameY + height / 2);
+            bigGridBox = bigGridBox.concat(sprite);
+            app.stage.addChild(sprite);
+        }
+    }
+
+    var smallGridBox = [];
+    for (let i = 0; i < 4; i++) {
+        if (i < 2) {
+            let sprite = new PIXI.Sprite(PIXI.Texture.WHITE);
+            sprite.tint = "green";
+            sprite.visible = false;
+            sprite.setSize(width / 8, height / 128);
+            sprite.anchor.set(0.5, 0);
+            if (!i) sprite.position.set(grid.position.x - grid.getSize().width / 2.9, grid.position.y - grid.getSize().height / 2.125);
+            else sprite.position.set(grid.position.x - grid.getSize().width / 2.9, grid.position.y - grid.getSize().height / 4.5);
+            smallGridBox = smallGridBox.concat(sprite);
+            app.stage.addChild(sprite);
+        } else {
+            let sprite = new PIXI.Sprite(PIXI.Texture.WHITE);
+            sprite.tint = "green";
+            sprite.visible = false;
+            sprite.setSize(height / 128, width / 7.75);
+            sprite.anchor.set(0, 0);
+            if (!(i - 2)) sprite.position.set(grid.position.x - grid.getSize().width / 2.125, grid.position.y - grid.getSize().height / 2.125);
+            else sprite.position.set(grid.position.x - grid.getSize().width / 4.5, grid.position.y - grid.getSize().height / 2.125);
+            smallGridBox = smallGridBox.concat(sprite);
+            app.stage.addChild(sprite);
+        }
+    }
+
+    function moveSmallGridBox(cell) {
+        let moveX = 0;
+        let moveY = 0;
+        // Set X
+        switch (cell) {
+            case 0:
+            case 3:
+            case 6:
+                moveX = 0;
+                break;
+
+            case 1:
+            case 4:
+            case 7:
+                moveX = 1;
+                break;
+
+            case 2:
+            case 5:
+            case 8:
+                moveX = 2;
+        }
+        // Set Y
+        switch (cell) {
+            case 0:
+            case 1:
+            case 2:
+                moveY = 0;
+                break;
+
+            case 3:
+            case 4:
+            case 5:
+                moveY = 1;
+                break;
+
+            case 6:
+            case 7:
+            case 8:
+                moveY = 1.95;
+        }
+        // Horizontal lines
+        smallGridBox[0].position.set(grid.position.x - grid.getSize().width / 2.9 + moveX * width / 5.84, grid.position.y - grid.getSize().height / 2.125 + moveY * height / 3.175);
+        smallGridBox[1].position.set(grid.position.x - grid.getSize().width / 2.9 + moveX * width / 5.84, grid.position.y - grid.getSize().height / 4.5 + moveY * height / 3.175);
+        // Vertical lines
+        smallGridBox[2].position.set(grid.position.x - grid.getSize().width / 2.125 + moveX * width / 5.84, grid.position.y - grid.getSize().height / 2.125 + moveY * height / 3.175);
+        smallGridBox[3].position.set(grid.position.x - grid.getSize().width / 4.5  + moveX * width / 5.84, grid.position.y - grid.getSize().height / 2.125 + moveY * height / 3.175);
+        for (let child of bigGridBox) child.visible = false;
+        for (let child of smallGridBox) child.visible = true;
+    }
 
 
     function playOffline() {
-        for (let child of app.stage.children) {
-            child.visible = false;
-        }
+        for (let child of uiElements) child.visible = false;
+        for (let text of uiText) for (let char of text) char.visible = false;
+        grid.visible = true;
+        for (let child of bigGridBox) child.visible = true;
     }
 
     function playOnline() {
@@ -157,6 +281,25 @@ height = width / 16 * 9;
             return type(string, x + ((frameWidth - finalStringWidth) / 2), y + frameHeight / 2, finalScale);
         }
         return type(string, x, y, finalScale);
+    }
+
+    let refMatrix = [[0, 3, 6], [1, 4, 7], [2, 5, 8]];
+
+    function gridClick(event) {
+        let gridSize = grid.getSize();
+        let relX = event.x - (grid.position.x - gridSize.width / 2);
+        let relY = event.y - (grid.position.y - gridSize.height/2);
+        let boxX;
+        let boxY;
+        if (relX < gridSize.width / 3) boxX = 0;
+        else if (relX >= gridSize.width / 3 && relX < gridSize.width / 3 * 2) boxX = 1;
+        else boxX = 2;
+
+        if (relY < gridSize.height / 3) boxY = 0;
+        else if (relY >= gridSize.height / 3 && relY < gridSize.height / 3 * 2) boxY = 1;
+        else boxY = 2;
+
+        moveSmallGridBox(refMatrix[boxX][boxY]);
     }
     
     function type(string, x, y, fontScale) {
